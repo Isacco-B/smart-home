@@ -26,6 +26,8 @@ const MqttContext = createContext<{
   mqttStatus: MqttStatus;
   mqttError: MqttError;
   subscribeToTopic: SubscribeToTopic;
+  unsubscribeToTopic: SubscribeToTopic;
+  publishToTopic: (topic: string, message: string) => void;
   setDoMqttConnection: Dispatch<SetStateAction<boolean>>;
 } | null>(null);
 
@@ -59,6 +61,31 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const unsubscribeToTopic: SubscribeToTopic = (topics) => {
+    if (!mqttClient) {
+      console.warn("MQTT client is not connected");
+      return;
+    }
+
+    topics.forEach((topic) => {
+      mqttClient.unsubscribe(topic, (error) => {
+        if (error) {
+          setMqttStatus("Error");
+          emitStateError(setMqttError, "MqttTopic", error);
+        }
+      })
+    })
+  }
+
+  const publishToTopic = (topic: string, message: string) => {
+    if (!mqttClient) {
+      console.warn("MQTT client is not connected");
+      return;
+    }
+
+    mqttClient.publish(topic, message);
+  };
+
   return (
     <MqttContext.Provider
       value={{
@@ -67,6 +94,8 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         mqttStatus,
         mqttError,
         subscribeToTopic,
+        unsubscribeToTopic,
+        publishToTopic,
         setDoMqttConnection,
       }}
     >
